@@ -1,0 +1,30 @@
+{% extends 'bootstrap/base.html' %}
+{% block navbar %}
+    <nav class="navbar navbar-inverse" role="navigation">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 ">
+                    <a class="navbar-brand" href="{{ url_for('logout') }}">Logout </a>
+                </div>
+                <div class="col-lg-2 ">
+                    <a class="navbar-brand" href="{{ url_for('login') }}">Hello {{ current_user.username }}</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+{% endblock %}
+{% block content %}
+<h1>Welcome to the quiz!!</h1>
+    <h3>{{ a }}</h3>
+<div class="container">
+{% for message in get_flashed_messages() %}
+<div class="alert alert-warning">
+<button type="button" class="close" data-dismiss="alert">&times;</button>
+{{ message }}
+</div>
+{% endfor %}
+{% block page_content %}
+    {{ current_user.username }}
+{% endblock %}
+</div>
+{% endblock %}
