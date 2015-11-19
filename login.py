@@ -144,9 +144,9 @@ def logout():
     return redirect(url_for('page1'))
 
 
-@app.route('/test', methods=['GET', 'POST'])
+@app.route('/changepass', methods=['GET', 'POST'])
 @login_required
-def test():
+def change_password():
     form = Reauthenticate()
     user = current_user
     if form.validate_on_submit():
