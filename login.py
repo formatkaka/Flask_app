@@ -146,22 +146,19 @@ def logout():
 
 @app.route('/test', methods=['GET', 'POST'])
 @login_required
-def tset():
+def test():
     form = Reauthenticate()
     user = current_user
-    e = 1
-    f = 1
     if form.validate_on_submit():
         a = user.check_password(form.re_password.data)
-        b = user.gen_password(form.new_password.data)
-        c = check_password_hash(b, user.gen_password(form.auth_new_password.data))
 
         if a:
             user.password_hash = generate_password_hash(form.new_password.data)
             db.session.commit()
-            return render_template('query.html', a=c)
+            logout_user()
+            return redirect(url_for('login'))
 
-    return render_template('reauthenticate.html', form=form, e=c, f=f)
+    return render_template('reauthenticate.html', form=form)
 
 
 if __name__ == '__main__':

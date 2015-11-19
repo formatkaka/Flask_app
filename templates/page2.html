@@ -1,23 +1,15 @@
-{% extends 'bootstrap/base.html' %}
+{% extends 'base.html' %}
+{#{% extends 'bootstrap/base.html' %}#}
+
 {% import "bootstrap/wtf.html" as wtf %}
 {% block navbar %}
-    <nav class="navbar navbar-inverse" role="navigation">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-2">
-                    <a class="navbar-brand" href="{{ url_for('login') }}">Login</a>
-                </div>
-                <div class="col-lg-2 col-md-offset-8">
-                    <a class="navbar-brand" href="{{ url_for('login') }}">Hello Siddhant</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    {{ super() }}
+
 {% endblock %}
 
 
 {% block content %}
-
+    {% if form %}
     <div class="container">
         <div class="row">
             <div class="col-lg-4" >
@@ -25,7 +17,7 @@
             </div>
         </div>
     </div>
-
+    {% endif %}
     <div class="container">
         <div class="row">
             <div class="col-lg-2">
