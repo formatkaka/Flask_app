@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, session, flash, request
+from flask import Flask, render_template, redirect, url_for, session, flash, request, g
 from flask.ext.bootstrap import Bootstrap
 from flask_wtf import Form
 from wtforms import StringField, SubmitField, PasswordField
@@ -17,15 +17,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.refresh_view = "reauthenticate"
 
+login_manager.login_view = '/login'
+login_manager.login_message = 'PLease log in to access the page.'
 
-# login_manager.needs_refresh_message = (
-#     u"To protect your account, please reauthenticate to access this page."
-# )
-# login_manager.needs_refresh_message_category = "info"
-# login_manager.login_view = "main"  # Redirects to this page for login
+login_manager.refresh_view = '/changepass'
+login_manager.needs_refresh_message = "Confirm your account"
 
-
-# login_manager.login_message = "Welcome"
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
@@ -94,14 +91,15 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.id.data).first()  #
         if user is None:
+            form.id.data = ''
             return redirect(url_for('new_reg'))
         else:
             if user.check_password(form.password.data):
-                login_user(user)
                 form.id.data = ''
-
+                login_user(user)
                 return redirect(request.args.get('next') or url_for('main'))
             else:
+                # form.id.data = ''
                 return redirect(url_for('main', **request.args))
 
     return render_template('page2.html', form=form)
@@ -145,7 +143,7 @@ def logout():
 
 
 @app.route('/changepass', methods=['GET', 'POST'])
-@login_required
+@fresh_login_required
 def change_password():
     form = Reauthenticate()
     user = current_user

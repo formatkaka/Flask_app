@@ -8,5 +8,9 @@
     Welcome to my first app.
     <h2><a href="{{ url_for('login') }}">Proceed to LOGIN</a></h2>
 </body>
-<h1>{{ a }}</h1>
+{% if  current_user.is_authenticated %}
+    <h1> hello</h1>
+{% else %}
+    <h1>sdihf</h1>
+{% endif %}
 </html>
