@@ -3,31 +3,29 @@
 
 {% block navbar %}
 <nav class="navbar navbar-inverse" role="navigation">
+
     <div class="container">
         <div class="row">
-{#            <div class="col-lg-2">#}
-{#                Flask_app#}
-{#            </div>#}
 
-            <ul class="nav navbar-nav">
+
+            <ul class="nav navbar-nav navbar-fixed-top">
+                <li>Flask-app</li>
                 <li><a class="navbar-brand" href="{{ url_for('main') }}">Home</a></li>
-                <li><a class="navbar-brand" href="{{ url_for('change_password') }}">Change PAssword</a></li>
+                <li><a class="navbar-brand" href="{{ url_for('change_password') }}">Change Password</a></li>
                 <li>{% if current_user.is_authenticated %}
                     <a class="navbar-brand" href="{{ url_for('logout') }}">Logout</a>
-                {% else %}
-                    <a class="navbar-brand" href="{{ url_for('login') }}">Login</a>
                 {% endif %}</li>
             </ul>>
 
-{#            class="nav navbar-nav navbar-right"#}
-{#                {% if current_user.is_authenticated %}#}
-{#                    <a class="navbar-brand" href="{{ url_for('logout') }}">Logout</a>#}
-{#                {% else %}#}
-{#                    <a class="navbar-brand" href="{{ url_for('login') }}">Login</a>#}
-{#                {% endif %}#}
-            </div>
 
+            {% if current_user.is_authenticated %}
+
+                    <p class="navbar-text navbar-right">Signed in as
+                    <a href="#" class="navbar-link">{{ current_user.username }}</a></p>
+
+            {% endif %}
         </div>
     </div>
+
 </nav>
 {% endblock %}
