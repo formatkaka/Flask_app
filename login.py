@@ -55,9 +55,9 @@ class User(UserMixin, db.Model):
 
 
 class Reauthenticate(Form):
-    re_password = PasswordField('Enter Password')
-    new_password = PasswordField('Enter new password')
-    auth_new_password = PasswordField('Re-enter new password')
+    re_password = PasswordField('Enter Password', validators=[DataRequired()])
+    new_password = PasswordField('Enter new password', validators=[DataRequired()])
+    auth_new_password = PasswordField('Re-enter new password', validators=[DataRequired()])
     submit = SubmitField('Change Password')
 
 
@@ -152,9 +152,16 @@ def change_password():
 
         if a:
             user.password_hash = generate_password_hash(form.new_password.data)
-            db.session.commit()
-            logout_user()
-            return redirect(url_for('login'))
+            if form.new_password.data == form.auth_new_password.data:
+                db.session.commit()
+                logout_user()
+                flash('Password Changed')
+                return redirect(url_for('login'))
+            else:
+                flash('New passwords do nor match')
+                return redirect(url_for('change_password'))
+        else:
+            flash('Incorrect password entered!')
 
     return render_template('reauthenticate.html', form=form)
 

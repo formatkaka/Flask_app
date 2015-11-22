@@ -9,7 +9,6 @@
 
 
             <ul class="nav navbar-nav navbar-fixed-top">
-                <li>Flask-app</li>
                 <li><a class="navbar-brand" href="{{ url_for('main') }}">Home</a></li>
                 <li><a class="navbar-brand" href="{{ url_for('change_password') }}">Change Password</a></li>
                 <li>{% if current_user.is_authenticated %}
