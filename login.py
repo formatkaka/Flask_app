@@ -99,7 +99,7 @@ def login():
                 login_user(user)
                 return redirect(request.args.get('next') or url_for('main'))
             else:
-                # form.id.data = ''
+
                 return redirect(url_for('main', **request.args))
 
     return render_template('page2.html', form=form)
