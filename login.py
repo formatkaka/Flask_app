@@ -2,11 +2,14 @@ from flask import Flask, render_template, redirect, url_for, session, flash, req
 from flask.ext.bootstrap import Bootstrap
 from flask_wtf import Form
 from wtforms import StringField, SubmitField, PasswordField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, EqualTo
+from flask_wtf.file import FileField, FileAllowed
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_required, UserMixin, login_user, logout_user, fresh_login_required, \
     confirm_login, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+import os
+import imghdr
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -15,7 +18,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite3'
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.refresh_view = "reauthenticate"
+
+login_manager.refresh_view = "/reauthenticate"
 
 login_manager.login_view = '/login'
 login_manager.login_message = 'PLease log in to access the page.'
@@ -57,7 +61,8 @@ class User(UserMixin, db.Model):
 class Reauthenticate(Form):
     re_password = PasswordField('Enter Password', validators=[DataRequired()])
     new_password = PasswordField('Enter new password', validators=[DataRequired()])
-    auth_new_password = PasswordField('Re-enter new password', validators=[DataRequired()])
+    auth_new_password = PasswordField('Re-enter new password', validators=[DataRequired(), EqualTo('new_password',
+                                                                                           message=' New Passwords do not match')])
     submit = SubmitField('Change Password')
 
 
@@ -73,6 +78,11 @@ class NewUser(Form):
     password = PasswordField('password', validators=[DataRequired()])
     repassword = PasswordField('re-password', validators=[DataRequired()])
     submit = SubmitField('Register')
+
+
+class UploadForm(Form):
+    image_file = FileField('Upload image')
+    submit = SubmitField('Submit')
 
 
 @login_manager.user_loader
@@ -100,7 +110,7 @@ def login():
                 return redirect(request.args.get('next') or url_for('main'))
             else:
 
-                return redirect(url_for('main', **request.args))
+                return redirect(url_for('main'))
 
     return render_template('page2.html', form=form)
 
@@ -126,13 +136,23 @@ def new_reg():
 @app.route('/main')
 @login_required
 def main():
+
+
     return render_template('main.html')
 
 
-@app.route('/profile')
-@fresh_login_required
-def prof():
-    return render_template('page1.html')
+@app.route('/uploads', methods=['GET', 'POST'])
+def upload_image():
+    image = None
+    form = UploadForm()
+
+    if form.validate_on_submit():
+        image = '/uploads' + form.image_file.data.filename
+        form.image_file.data.save(os.path.join(os.path.dirname('H:\\static\\uploads'), image))
+        flash('Uploaded successfully')
+        # return render_template('main.html')
+
+    return render_template('uploads.html', form=form, image=image)
 
 
 @app.route('/logout')
@@ -152,14 +172,11 @@ def change_password():
 
         if a:
             user.password_hash = generate_password_hash(form.new_password.data)
-            if form.new_password.data == form.auth_new_password.data:
-                db.session.commit()
-                logout_user()
-                flash('Password Changed')
-                return redirect(url_for('login'))
-            else:
-                flash('New passwords do nor match')
-                return redirect(url_for('change_password'))
+            db.session.commit()
+            logout_user()
+            flash('Password Changed')
+            return redirect(url_for('login'))
+
         else:
             flash('Incorrect password entered!')
 
