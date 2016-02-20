@@ -1,20 +1,31 @@
-from flask import Flask, render_template, redirect, url_for, session, flash, request, g
+from flask import Flask, render_template, redirect, url_for, session, flash, request, g, send_from_directory
 from flask.ext.bootstrap import Bootstrap
 from flask_wtf import Form
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, EqualTo
-from flask_wtf.file import FileField, FileAllowed
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager, login_required, UserMixin, login_user, logout_user, fresh_login_required, \
     confirm_login, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 import os
 import imghdr
-
+from flask.ext.uploads import UploadSet
+from flask_wtf.csrf import CsrfProtect
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
 app.config['SECRET_KEY'] = 'secret!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.sqlite3'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd()+'/uploads/')
+app.config['ALLOWED_EXTENSIONS'] = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif']
+app.config['WTF_CSRF_ENABLED'] = True
+
+csrf = CsrfProtect()
+csrf.init_app(app)
+
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -32,6 +43,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True)
+    address = db.Column(db.String)
     password_hash = db.Column(db.String)
 
     def gen_password(self, password):
@@ -41,9 +53,10 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     @staticmethod
-    def register(username, password):
+    def register(username, password, address):
         user = User(username=username)
         user.gen_password(password)
+        user.address = address
         db.session.add(user)
         db.session.commit()
 
@@ -68,6 +81,7 @@ class Reauthenticate(Form):
 
 class Login(Form):
     id = StringField('college_id', validators=[DataRequired()])
+    address = StringField('address')
     password = PasswordField('password', validators=[DataRequired()])
     submit = SubmitField('Login')
 
@@ -75,13 +89,14 @@ class Login(Form):
 class NewUser(Form):
     name = StringField('Name', validators=[DataRequired()])
     id = StringField('college_id', validators=[DataRequired()])
+    address = StringField('address')
     password = PasswordField('password', validators=[DataRequired()])
     repassword = PasswordField('re-password', validators=[DataRequired()])
     submit = SubmitField('Register')
 
 
 class UploadForm(Form):
-    image_file = FileField('Upload image')
+    image_file = FileField('Upload image',validators=[FileAllowed(app.config['ALLOWED_EXTENSIONS'],message="Invalid")])
     submit = SubmitField('Submit')
 
 
@@ -107,7 +122,8 @@ def login():
             if user.check_password(form.password.data):
                 form.id.data = ''
                 login_user(user)
-                return redirect(request.args.get('next') or url_for('main'))
+                # return redirect(request.args.get('next') or url_for('main'))
+                return redirect(url_for('main'))
             else:
 
                 return redirect(url_for('main'))
@@ -121,7 +137,7 @@ def new_reg():
 
     if reg_form.validate_on_submit():
         if reg_form.password.data == reg_form.repassword.data:
-            User.register(reg_form.name.data, reg_form.password.data)
+            User.register(reg_form.name.data, reg_form.password.data, reg_form.address.data)
             reg_form.id.data = ''
             reg_form.name.data = ''
             return redirect(url_for('login'))
@@ -147,10 +163,10 @@ def upload_image():
     form = UploadForm()
 
     if form.validate_on_submit():
-        image = '/uploads' + form.image_file.data.filename
-        form.image_file.data.save(os.path.join(os.path.dirname('H:\\static\\uploads'), image))
+        image = secure_filename(form.image_file.data.filename)
+        form.image_file.data.save(os.path.join(app.config['UPLOAD_FOLDER'] + image))
         flash('Uploaded successfully')
-        # return render_template('main.html')
+        return render_template('main.html')
 
     return render_template('uploads.html', form=form, image=image)
 
@@ -181,6 +197,32 @@ def change_password():
             flash('Incorrect password entered!')
 
     return render_template('reauthenticate.html', form=form)
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'],
+                               filename)
+
+@app.route('/edit', methods=['GET','PUT'])
+def edit_profile():
+	user = current_user
+	form = Login()
+	if request.method == 'GET':
+		form.id.data = user.username
+		form.address.data = user.address
+	if request.method == 'PUT':
+		user.id = form.id.data
+		user.address = form.address.data
+		try:
+			db.session.add(user)
+			db.session.commit()
+		except Exception as e:
+			db.session.rollback()
+			print e
+			abort(500)
+		return redirect(url_for(main))
+
+	return render_template('new_user.html',form=form)
 
 
 if __name__ == '__main__':
